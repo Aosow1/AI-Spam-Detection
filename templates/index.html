@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spam Detector</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; min-height: 100vh; }
+
+  header {
+    background: #1a1a2e;
+    color: white;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header h1 { font-size: 22px; font-weight: 600; }
+  header span { font-size: 13px; color: #aaa; margin-left: 8px; }
+
+  .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+
+  .card {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    border: 1px solid #e8ecf0;
+    margin-bottom: 24px;
+  }
+
+  label { font-size: 14px; color: #666; display: block; margin-bottom: 8px; font-weight: 500; }
+
+  textarea {
+    width: 100%;
+    height: 140px;
+    padding: 14px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 15px;
+    resize: vertical;
+    font-family: inherit;
+    transition: border 0.2s;
+    outline: none;
+  }
+  textarea:focus { border-color: #4f46e5; }
+
+  .btn-analyze {
+    width: 100%;
+    padding: 14px;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-analyze:hover { background: #3730a3; }
+  .btn-analyze:active { transform: scale(0.98); }
+  .btn-analyze:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+  .examples { display: flex; gap: 12px; margin-top: 16px; }
+  .btn-example {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1.5px solid #e0e0e0;
+    background: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-example:hover { border-color: #4f46e5; color: #4f46e5; }
+
+  #result { display: none; }
+
+  .result-spam {
+    background: #fff5f5;
+    border: 2px solid #fc8181;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+  }
+  .result-safe {
+    background: #f0fff4;
+    border: 2px solid #68d391;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .result-icon { font-size: 48px; margin-bottom: 8px; }
+  .result-label { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+  .result-sub { font-size: 14px; color: #666; }
+
+  .probas { margin-top: 24px; }
+  .proba-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .proba-label { font-size: 13px; color: #555; width: 80px; }
+  .proba-bar-bg { flex: 1; height: 10px; background: #eee; border-radius: 6px; overflow: hidden; }
+  .proba-bar { height: 100%; border-radius: 6px; transition: width 0.6s ease; }
+  .bar-spam { background: #fc8181; }
+  .bar-safe { background: #68d391; }
+  .proba-value { font-size: 13px; font-weight: 600; min-width: 40px; text-align: right; }
+
+  .loader { display: none; text-align: center; padding: 20px; color: #666; }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #4f46e5;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer { text-align: center; color: #aaa; font-size: 13px; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:26px">🛡️</span>
+  <div>
+    <h1>Spam Detector <span>— Détection de messages indésirables</span></h1>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <label>✉️ Message à analyser</label>
+    <textarea id="message" placeholder="Entrez un message ici pour tester..."></textarea>
+
+    <button class="btn-analyze" onclick="analyser()">🔍 Analyser le message</button>
+
+    <div class="examples">
+      <button class="btn-example" onclick="setExemple('spam')">🚨 Exemple spam</button>
+      <button class="btn-example" onclick="setExemple('safe')">✅ Exemple normal</button>
+    </div>
+  </div>
+
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p>Analyse en cours...</p>
+  </div>
+
+  <div id="result" class="card">
+    <div id="result-box"></div>
+    <div class="probas">
+      <label style="margin-bottom:16px">📈 Probabilités</label>
+      <div class="proba-row">
+        <span class="proba-label">🚨 Spam</span>
+        <div class="proba-bar-bg"><div class="proba-bar bar-spam" id="bar-spam" style="width:0%"></div></div>
+        <span class="proba-value" id="val-spam">0%</span>
+      </div>
+      <div class="proba-row">
+        <span class="proba-label">✅ Pas spam</span>
+        <div class="proba-bar-bg"><div class="proba-bar bar-safe" id="bar-safe" style="width:0%"></div></div>
+        <span class="proba-value" id="val-safe">0%</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Spam Detector — Projet IA &nbsp;·&nbsp; Construit avec Flask</footer>
+
+<script>
+function analyser() {
+  const message = document.getElementById('message').value.trim();
+  if (!message) { alert('Veuillez entrer un message.'); return; }
+
+  document.querySelector('.btn-analyze').disabled = true;
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('loader').style.display = 'block';
+
+  fetch('/predict', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message })
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('loader').style.display = 'none';
+    document.querySelector('.btn-analyze').disabled = false;
+
+    const box = document.getElementById('result-box');
+    if (data.is_spam) {
+      box.innerHTML = `
+        <div class="result-spam">
+          <div class="result-icon">🚨</div>
+          <div class="result-label" style="color:#e53e3e">SPAM détecté !</div>
+          <div class="result-sub">Ce message est probablement un spam.</div>
+        </div>`;
+    } else {
+      box.innerHTML = `
+        <div class="result-safe">
+          <div class="result-icon">✅</div>
+          <div class="result-label" style="color:#276749">Message sain</div>
+          <div class="result-sub">Ce message ne semble pas être un spam.</div>
+        </div>`;
+    }
+
+    document.getElementById('bar-spam').style.width = data.spam_probability + '%';
+    document.getElementById('bar-safe').style.width = data.safe_probability + '%';
+    document.getElementById('val-spam').textContent = data.spam_probability + '%';
+    document.getElementById('val-safe').textContent = data.safe_probability + '%';
+
+    document.getElementById('result').style.display = 'block';
+  })
+  .catch(() => {
+    document.getElementById('loader').style.display = 'none';
+    document.querySelector('.btn-analyze').disabled = false;
+    alert('Erreur lors de la connexion au serveur.');
+  });
+}
+
+function setExemple(type) {
+  const exemples = {
+    spam: "URGENT ! Vous avez gagné un iPhone 15. Cliquez ici pour réclamer votre prix : www.free-prize.com",
+    safe: "Salut, on se retrouve demain à 14h pour la réunion d'équipe ?"
+  };
+  document.getElementById('message').value = exemples[type];
+}
+
+document.getElementById('message').addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') analyser();
+});
+</script>
+</body>
+</html>
