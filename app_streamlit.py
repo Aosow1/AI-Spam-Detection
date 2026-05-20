@@ -4,7 +4,7 @@ import numpy as np
 
 # Configuration de la page
 st.set_page_config(
-    page_title="Spam Detector",
+    page_title="Détection de Spam",
     page_icon="🛡️",
     layout="centered"
 )
@@ -48,7 +48,7 @@ st.markdown('<p class="subtitle">Entrez un message pour savoir s\'il est un spam
 # Stats dans la sidebar
 with st.sidebar:
     st.header("📊 À propos")
-    st.info("Ce modèle a été entraîné pour détecter les messages spam avec une précision élevée.")
+    st.info("Ce modèle a été entraîné pour détecter les messages spam avec une bonneprécision.")
     st.metric("Modèle", "TF-IDF + Classifier")
     if st.button("🔄 Réinitialiser"):
         st.rerun()
@@ -112,17 +112,17 @@ if analyser and message.strip():
 elif analyser and not message.strip():
     st.warning("⚠️ Veuillez entrer un message avant d'analyser.")
 
-# Exemples
+
 st.divider()
 st.subheader("💡 Exemples à tester")
 col1, col2 = st.columns(2)
 with col1:
     if st.button("🚨 Exemple spam", use_container_width=True):
-        st.session_state['exemple'] = "URGENT: Vous avez gagné un iPhone! Cliquez maintenant: www.free-prize.com"
+        st.session_state['exemple'] = "URGENT: Vous avez gagné un iPhone! Cliquez maintenant: www.gagnant-telephonegn.com"
 with col2:
     if st.button("✅ Exemple normal", use_container_width=True):
         st.session_state['exemple'] = "Salut, on se retrouve demain à 14h pour la réunion ?"
 
 # Footer
 st.markdown("---")
-st.markdown('<p style="text-align:center; color:#aaa; font-size:13px;">Spam Detector — Projet IA</p>', unsafe_allow_html=True)
+st.markdown('<p style="text-align:center; color:#aaa; font-size:13px;">Détection de Spam — Projet IA</p>', unsafe_allow_html=True)
